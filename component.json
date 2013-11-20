@@ -31,6 +31,8 @@
     "panel.html"
   ],
   "files": [
+    "local/signature-api-legacy-for-angular/index.js",
+    "local/signature-api-legacy-for-angular/component.json",
     "images/1.png",
     "images/2.png",
     "images/3.png",

@@ -5,7 +5,7 @@ var _ = require('underscore');
 
 require('./module')
 .directive('d3Cloud', function () {
-  function controller($scope, $timeout, ControlPanel, signatureApi) {
+  function controller($scope, $timeout, controlPanel, signatureApi) {
     /**
      * Format url of built-in images
      */
@@ -167,7 +167,7 @@ require('./module')
       start();
     };
 
-    ControlPanel.add('cloud', 'glyphicon-th', require('./panel.html'), opts);
+    controlPanel.add('cloud', 'glyphicon-th', require('./panel.html'), opts);
   }
 
   return {
