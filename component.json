@@ -8,9 +8,16 @@
     "mbostock/d3": "*",
     "rogerz/d3-cloud": "*",
     "samsonjs/format": "*",
-    "jashkenas/underscore": "*"
+    "jashkenas/underscore": "*",
+    "rogerz/control-panel-for-angular": "*"
   },
   "development": {},
+  "paths": [
+    "local"
+  ],
+  "locals": {
+    "signature-api-legacy-for-angular": "*"
+  },
   "license": "MIT",
   "main": "index.js",
   "scripts": [
@@ -19,7 +26,6 @@
     "directives.js"
   ],
   "styles": [
-    "d3-cloud-for-angular.css"
   ],
   "templates": [
     "panel.html"

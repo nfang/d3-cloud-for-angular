@@ -1,5 +1,3 @@
-'use strict';
-
 var d3 = require('d3');
 var format = require('format').format;
 var d3Cloud = require('d3-cloud').cloud;
@@ -7,7 +5,7 @@ var _ = require('underscore');
 
 require('./module')
 .directive('d3Cloud', function () {
-  function controller($scope, $timeout, ControlPanel, signatureService) {
+  function controller($scope, $timeout, ControlPanel, signatureApi) {
     /**
      * Format url of built-in images
      */
@@ -146,18 +144,18 @@ require('./module')
 
     // connect to remote server
     opts.connect = function connect() {
-      signatureService.setup(opts.server, {eventId: opts.eventId});
+      signatureApi.setup(opts.server, {eventId: opts.eventId});
 
       var init = false;
       function poll() {
         if (!init) {
           init = true;
-          signatureService.list(function (data) {
+          signatureApi.list(function (data) {
             imgPool.merge(data);
             stat.imgInPool = imgPool.getLength();
           });
         } else {
-          signatureService.update(function (data) {
+          signatureApi.update(function (data) {
             imgPool.merge(data);
             stat.imgInPool = imgPool.getLength();
           });
