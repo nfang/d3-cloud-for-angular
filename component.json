@@ -15,9 +15,9 @@
   "paths": [
     "local"
   ],
-  "locals": {
-    "signature-api-legacy-for-angular": "*"
-  },
+  "local": [
+    "signature-api-legacy-for-angular"
+  ],
   "license": "MIT",
   "main": "index.js",
   "scripts": [
