@@ -16,7 +16,7 @@ require('./module')
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
-      bgImg: builtInImage('bg.png'),
+      bgImg: builtInImage('20pct.png'),
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
       drawInterval: 2000,
