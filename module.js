@@ -1,0 +1,1 @@
+module.exports = angular.module('rogerz/d3Cloud', []);
