@@ -10,7 +10,7 @@ require('./module')
      * Format url of built-in images
      */
     function builtInImage(name) {
-      return format('build/d3-cloud-for-angular/images/%s', name);
+      return format('build/rogerz-d3-cloud-for-angular/images/%s', name);
     }
 
     var opts = $scope.opts = {
