@@ -15,7 +15,7 @@
   "main": "index.js",
   "scripts": [
     "index.js",
-    "config.js",
+    "module.js",
     "directives.js"
   ],
   "styles": [
