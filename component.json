@@ -9,14 +9,14 @@
     "rogerz/d3-cloud": "*",
     "samsonjs/format": "*",
     "jashkenas/underscore": "*",
-    "rogerz/control-panel-for-angular": "*"
+    "rogerz/control-panel-for-angular": "*",
+    "rogerz/signature-api-legacy-for-angular": "*"
   },
   "development": {},
   "paths": [
     "local"
   ],
   "local": [
-    "signature-api-legacy-for-angular"
   ],
   "license": "MIT",
   "main": "index.js",
@@ -31,8 +31,6 @@
     "panel.html"
   ],
   "files": [
-    "local/signature-api-legacy-for-angular/index.js",
-    "local/signature-api-legacy-for-angular/component.json",
     "images/1.png",
     "images/2.png",
     "images/3.png",
