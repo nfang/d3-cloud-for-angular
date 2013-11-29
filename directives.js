@@ -23,7 +23,6 @@ require('./module')
       pollInterval: 1000,
       transPulseWidth: 1,// transition duration / draw interval
       eventId: 118,
-      server: 'CNTest',
       transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
 
@@ -144,8 +143,6 @@ require('./module')
 
     // connect to remote server
     opts.connect = function connect() {
-      signatureApi.setup(opts.server, {eventId: opts.eventId});
-
       var init = false;
       function poll() {
         if (!init) {

@@ -32,15 +32,7 @@
     <input type="range" min="1000" max="10000" step="1000" ng-model="ctx.pollInterval"></input>{{ctx.pollInterval}}ms
   </li>
   <li class="list-group-item">
-    <label>Server</label>
-    <select ng-model="ctx.server">
-      <option value="CNTest">China Test</option>
-      <option value="CNProd">China Production</option>
-      <option value="EU">Europe</option>
-    </select>
-  </li>
-  <li class="list-group-item">
-    <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>
+    <button class="btn btn-primary" ng-if="ctx.server" ng-click="ctx.connect()">connect</button>
     <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>
     <button class="btn btn-danger" ng-click="ctx.reset()">reset</button>
   </li>

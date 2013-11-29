@@ -10,14 +10,14 @@
     "samsonjs/format": "*",
     "jashkenas/underscore": "*",
     "rogerz/control-panel-for-angular": "*",
-    "rogerz/signature-api-legacy-for-angular": "*"
+    "rogerz/signature-api-legacy-for-angular": "*",
+    "leostera/angular.js": "*"
   },
   "development": {},
   "paths": [
     "local"
   ],
-  "local": [
-  ],
+  "local": [],
   "license": "MIT",
   "main": "index.js",
   "scripts": [
@@ -25,8 +25,7 @@
     "module.js",
     "directives.js"
   ],
-  "styles": [
-  ],
+  "styles": [],
   "templates": [
     "panel.html"
   ],
@@ -44,5 +43,6 @@
     "images/20pct.png",
     "images/doubletree.png",
     "images/32x16.png"
-  ]
+  ],
+  "remotes": []
 }
