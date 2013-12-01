@@ -16,7 +16,7 @@ require('./module')
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
-      bgImg: builtInImage('20pct.png'),
+      bgImg: require('./images/bg.png'),
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
       drawInterval: 2000,
@@ -132,12 +132,8 @@ require('./module')
     // run simulation
     opts.simulate = function simulate() {
       reset();
-
-      // prepare image list
-      d3.range(10).forEach(function (d) {
-        imgPool.push(builtInImage((d + 1 + '.png')));
-      });
-
+      imgPool.push(require('./images/1.png'));
+      imgPool.push(require('./images/2.png'));
       start();
     };
 
