@@ -60,7 +60,7 @@ require('./module')
       var self = this;
       var img = new Image();
 
-      img.crossOrigin = 'Anonymous';
+//      img.crossOrigin = 'Anonymous';
       img.onload = function () {
         self.images.push({
           img: img
