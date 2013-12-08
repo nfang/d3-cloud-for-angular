@@ -1,9 +1,6 @@
 
-build: components index.js d3-cloud-for-angular.css template.js
-	@component build --dev
-
-template.js: template.html
-	@component convert $<
+build: components index.js module.js directives.js panel.html
+	@component build --use component-data-uri --dev -o example
 
 components: component.json
 	@component install --dev

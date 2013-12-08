@@ -1,0 +1,6 @@
+{
+    "name": "d3-cloud-for-angular",
+    "devDependencies": {
+	"component-data-uri": "*"
+    }
+}

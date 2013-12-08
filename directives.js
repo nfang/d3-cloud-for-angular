@@ -20,9 +20,7 @@ require('./module')
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
       drawInterval: 2000,
-      pollInterval: 1000,
       transPulseWidth: 1,// transition duration / draw interval
-      eventId: 118,
       transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
 
@@ -60,12 +58,16 @@ require('./module')
       var self = this;
       var img = new Image();
 
-//      img.crossOrigin = 'Anonymous';
+
       img.onload = function () {
         self.images.push({
           img: img
         });
       };
+
+      if(/^https?:\/\//.test(image)) {
+        img.crossOrigin = 'Anonymous';
+      }
       img.src = image;
       img.width = opts.imgSize[0];
       img.height = opts.imgSize[1];
@@ -80,6 +82,7 @@ require('./module')
 
     ImgPool.prototype.reset = function () {
       this.images = [];
+      signatureApi.reset();
     };
 
     ImgPool.prototype.getLength = function () {
@@ -139,24 +142,12 @@ require('./module')
 
     // connect to remote server
     opts.connect = function connect() {
-      var init = false;
-      function poll() {
-        if (!init) {
-          init = true;
-          signatureApi.list(function (data) {
-            imgPool.merge(data);
-            stat.imgInPool = imgPool.getLength();
-          });
-        } else {
-          signatureApi.update(function (data) {
-            imgPool.merge(data);
-            stat.imgInPool = imgPool.getLength();
-          });
-        }
-        timers.poll = $timeout(poll, opts.pollInterval);
-      }
       reset();
-      poll();
+      signatureApi.on('data', function (data) {
+        imgPool.merge(data);
+        stat.imgInPool = imgPool.getLength();
+      });
+      signatureApi.poll();
       start();
     };
 

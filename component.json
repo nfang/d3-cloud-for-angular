@@ -10,8 +10,7 @@
     "samsonjs/format": "*",
     "jashkenas/underscore": "*",
     "rogerz/control-panel-for-angular": "*",
-    "rogerz/signature-api-legacy-for-angular": "*",
-    "leostera/angular.js": "*"
+    "rogerz/signature-api-legacy-for-angular": "*"
   },
   "development": {},
   "paths": [
