@@ -6,13 +6,6 @@ var _ = require('underscore');
 require('./module')
 .directive('d3Cloud', function () {
   function controller($scope, $timeout, controlPanel, signatureApi) {
-    /**
-     * Format url of built-in images
-     */
-    function builtInImage(name) {
-      return format('build/rogerz-d3-cloud-for-angular/images/%s', name);
-    }
-
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
