@@ -1,11 +1,11 @@
 
 build: components index.js module.js directives.js panel.html
-	@component build --use component-data-uri --dev -o example
+	@component build --dev -o example/build
 
 components: component.json
 	@component install --dev
 
 clean:
-	rm -fr build components template.js
+	rm -fr example/build components
 
 .PHONY: clean

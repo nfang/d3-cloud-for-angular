@@ -2,6 +2,7 @@ var d3 = require('d3');
 var format = require('format').format;
 var d3Cloud = require('d3-cloud').cloud;
 var _ = require('underscore');
+var imgPath = 'rogerz-d3-cloud-for-angular';
 
 require('./module')
 .directive('d3Cloud', function () {
@@ -9,7 +10,7 @@ require('./module')
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
-      bgImg: require('./images/bg.png'),
+      bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
       drawInterval: 2000,
@@ -128,8 +129,8 @@ require('./module')
     // run simulation
     opts.simulate = function simulate() {
       reset();
-      imgPool.push(require('./images/1.png'));
-      imgPool.push(require('./images/2.png'));
+      imgPool.push(imgPath + '/images/1.png');
+      imgPool.push(imgPath + '/images/2.png');
       start();
     };
 
