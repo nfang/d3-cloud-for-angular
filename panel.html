@@ -27,12 +27,16 @@
     <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>
     <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>
     <button class="btn btn-danger" ng-click="ctx.reset()">reset</button>
+    <button class="btn btn-normal" ng-click="ctx.print()">print</button>
+  </li>
+  <li class="list-group-item" ng-if="ctx.snapshots.length">
+    <a target="_blank" ng-repeat="s in ctx.snapshots" ng-href="{{s}}"><img ng-src="{{s}}" width="40"></a>
   </li>
   <li class="list-group-item">
     <ul>
       <li>guests: {{ctx.stat.imgInPool || 0}}</li>
       <li>placed: {{ctx.stat.imgPlaced || 0}}</li>
-      <li>failed: {{ctx.stat.imgFailed}}</li>
+      <li>failed: {{ctx.stat.imgFailed || 0}}</li>
     </ul>
   </li>
 </ul>
