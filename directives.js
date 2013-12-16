@@ -15,8 +15,7 @@ require('./module')
       blankArea: 0.01,// keep at least 10% blank area
       drawInterval: 2000,
       transPulseWidth: 1,// transition duration / draw interval
-      transDuration: function () {return opts.drawInterval * opts.transPulseWidth;},
-      snapshots: []
+      transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
 
     function update(tags, bounds, d) {
@@ -236,8 +235,10 @@ require('./module')
             ctx.restore();
 
             ctx.drawImage(img, 0, 0);
-
-            opts.snapshots.push(canvas.toDataURL());
+            canvas.toBlob(function (blob) {
+              var url = URL.createObjectURL(blob);
+              opts.snapshot = url;
+            });
           }
         });
       }

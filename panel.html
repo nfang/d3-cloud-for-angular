@@ -1,3 +1,8 @@
+<style>
+  img#snapshot {
+    width: 300px;
+  }
+</style>
 <ul class="list-group">
   <li class="list-group-item">
     <label>Draw interval:</label>
@@ -29,8 +34,8 @@
     <button class="btn btn-danger" ng-click="ctx.reset()">reset</button>
     <button class="btn btn-normal" ng-click="ctx.print()">print</button>
   </li>
-  <li class="list-group-item" ng-if="ctx.snapshots.length">
-    <a target="_blank" ng-repeat="s in ctx.snapshots" ng-href="{{s}}"><img ng-src="{{s}}" width="40"></a>
+  <li class="list-group-item" ng-if="ctx.snapshot">
+    <a target="_blank" href="{{ctx.snapshot}}"><img id="snapshot" ng-src="{{ctx.snapshot}}"></a>
   </li>
   <li class="list-group-item">
     <ul>

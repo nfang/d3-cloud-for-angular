@@ -11945,7 +11945,9 @@ require.register("d3-cloud-for-angular/module.js", Function("exports, require, m
 "module.exports = angular.module('rogerz/d3Cloud', [\n\
   require('signature-api-legacy-for-angular').name\n\
 ]).config(function ($compileProvider) {\n\
-  $compileProvider.aHrefSanitizationWhitelist(/^data:/);\n\
+  // the snapshot is created as blob\n\
+  $compileProvider.aHrefSanitizationWhitelist(/^blob:/);\n\
+  $compileProvider.imgSrcSanitizationWhitelist(/^blob:/);\n\
 });\n\
 //@ sourceURL=d3-cloud-for-angular/module.js"
 ));
@@ -11967,8 +11969,7 @@ require('./module')\n\
       blankArea: 0.01,// keep at least 10% blank area\n\
       drawInterval: 2000,\n\
       transPulseWidth: 1,// transition duration / draw interval\n\
-      transDuration: function () {return opts.drawInterval * opts.transPulseWidth;},\n\
-      snapshots: []\n\
+      transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}\n\
     };\n\
 \n\
     function update(tags, bounds, d) {\n\
@@ -12188,8 +12189,10 @@ require('./module')\n\
             ctx.restore();\n\
 \n\
             ctx.drawImage(img, 0, 0);\n\
-\n\
-            opts.snapshots.push(canvas.toDataURL());\n\
+            canvas.toBlob(function (blob) {\n\
+              var url = URL.createObjectURL(blob);\n\
+              opts.snapshot = url;\n\
+            });\n\
           }\n\
         });\n\
       }\n\
@@ -12251,7 +12254,12 @@ require.register("rogerz-signature-api-legacy-for-angular/lib/panel.html", Funct
 ';//@ sourceURL=rogerz-signature-api-legacy-for-angular/lib/panel.html"
 ));
 require.register("d3-cloud-for-angular/panel.html", Function("exports, require, module",
-"module.exports = '<ul class=\"list-group\">\\n\
+"module.exports = '<style>\\n\
+  img#snapshot {\\n\
+    width: 300px;\\n\
+  }\\n\
+</style>\\n\
+<ul class=\"list-group\">\\n\
   <li class=\"list-group-item\">\\n\
     <label>Draw interval:</label>\\n\
     <input type=\"range\" min=\"100\" max=\"5000\" step=\"100\" ng-model=\"ctx.drawInterval\"></input>{{ctx.drawInterval}}ms\\n\
@@ -12282,8 +12290,8 @@ require.register("d3-cloud-for-angular/panel.html", Function("exports, require, 
     <button class=\"btn btn-danger\" ng-click=\"ctx.reset()\">reset</button>\\n\
     <button class=\"btn btn-normal\" ng-click=\"ctx.print()\">print</button>\\n\
   </li>\\n\
-  <li class=\"list-group-item\" ng-if=\"ctx.snapshots.length\">\\n\
-    <a target=\"_blank\" ng-repeat=\"s in ctx.snapshots\" ng-href=\"{{s}}\"><img ng-src=\"{{s}}\" width=\"40\"></a>\\n\
+  <li class=\"list-group-item\" ng-if=\"ctx.snapshot\">\\n\
+    <a target=\"_blank\" href=\"{{ctx.snapshot}}\"><img id=\"snapshot\" ng-src=\"{{ctx.snapshot}}\"></a>\\n\
   </li>\\n\
   <li class=\"list-group-item\">\\n\
     <ul>\\n\
