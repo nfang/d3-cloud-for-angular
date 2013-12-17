@@ -2,7 +2,7 @@ example/bower: bower.json
 	bower install
 
 example/rogerz-d3-cloud-for-angular: example/build
-	rm -rf example/d3-cloud-for-angular
+	rm -rf example/rogerz-d3-cloud-for-angular
 	cp -R example/build/d3-cloud-for-angular example/rogerz-d3-cloud-for-angular
 
 example: example/bower example/build example/rogerz-d3-cloud-for-angular
