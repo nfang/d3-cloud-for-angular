@@ -12024,18 +12024,25 @@ require('./module')
       return this.images.length;
     };
 
-    var timers = {};
+    var timer;
     var imgPool = new ImgPool();
     var stat = opts.stat = {};
+
+    var pause = opts.pause = function pause() {
+      stat.stat = "paused";
+      $timeout.cancel(timer);
+    }
+
+    var resume = opts.resume = function resume() {
+      stat.stat = "playing";
+      step();
+    }
 
     /*
      * rest to ready status
      */
     var reset = opts.reset = function reset() {
-      _.each(timers,function (d) {
-        $timeout.cancel(d);
-      });
-      timers = {};
+      pause();
       imgPool.reset();
       stat = opts.stat = {
         imgFailed: 0,
@@ -12050,11 +12057,12 @@ require('./module')
       } else if (imgPool.getLength()) {
         cloud.addImg(imgPool.random());
       }
-      timers.draw = $timeout(step, opts.drawInterval);
+      timer = $timeout(step, opts.drawInterval);
     }
 
     // start cloud layout
     function start() {
+      stat.stat = "playing";
       // TODO: fix the ugly callback for image async loading
       var bg = new Image();
       bg.src = opts.bgImg;
@@ -12177,7 +12185,9 @@ require('./module')
             ctx.drawImage(img, 0, 0, width, height);
             canvas.toBlob(function (blob) {
               var url = URL.createObjectURL(blob);
-              opts.snapshot = url;
+              scope.$apply(function () {
+                opts.snapshot = url;
+              });
             });
           }
         });
@@ -12205,7 +12215,7 @@ require.register("rogerz-signature-api-legacy-for-angular/lib/panel.html", funct
 module.exports = '<ul class="list-group">\n  <li class="list-group-item">\n    <label>Server</label>\n    <select ng-model="ctx.server">\n      <option ng-repeat="host in ctx.hosts" value="{{host.address}}">{{host.name}}</option>\n    </select> {{ctx.server}}\n  </li>\n  <li class="list-group-item">\n    <label>Event ID:</label>\n    <input type="text" ng-model="ctx.eventId"></input>\n  </li>\n  <li class="list-group-item">\n    <label>Polling interval:</label>\n    <input type="range" min="1000" max="10000" step="1000" ng-model="ctx.pollInterval"></input>{{ctx.pollInterval}}ms\n  </li>\n</ul>\n';
 });
 require.register("d3-cloud-for-angular/panel.html", function(exports, require, module){
-module.exports = '<style>\n  img#snapshot {\n    width: 300px;\n  }\n</style>\n<ul class="list-group">\n  <li class="list-group-item">\n    <label>Draw interval:</label>\n    <input type="range" min="100" max="5000" step="100" ng-model="ctx.drawInterval"></input>{{ctx.drawInterval}}ms\n  </li>\n  <li class="list-group-item">\n    <label>Transition:</label>\n    <input type="range" min="0.1" max="2.0" step="0.1" ng-model="ctx.transPulseWidth"></input>{{ctx.transPulseWidth * ctx.drawInterval}}ms\n  </li>\n  <li class="list-group-item">\n    <label>Signature width:</label>\n    <input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[0]"></input>{{ctx.imgSize[0]}}\n  </li>\n  <li class="list-group-item">\n    <label>Signature height:</label>\n    <input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[1]"></input>{{ctx.imgSize[1]}}\n  </li>\n  <li class="list-group-item">\n    <label>Signature limits:</label>\n    <input type="range" min="100" max="1000" step="100" ng-model="ctx.imgLimit"></input>{{ctx.imgLimit}}\n  </li>\n  <li class="list-group-item">\n    <label>Blank reserved</label>\n    <input type="range" min="0.01" max="0.05" step="0.01" ng-model="ctx.blankArea"></input>{{ctx.blankArea * 100}}%\n  </li>\n  <li class="list-group-item">\n    <label>Print size</label>\n    <input type="range" min="1" max="4" step="0.5" ng-model="ctx.printScale"></input>{{ctx.dispSize[0] * ctx.printScale}} * {{ctx.dispSize[1] * ctx.printScale}}\n  </li>\n  <li class="list-group-item">\n    <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>\n    <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>\n    <button class="btn btn-danger" ng-click="ctx.reset()">reset</button>\n    <button class="btn btn-normal" ng-click="ctx.print()">print</button>\n  </li>\n  <li class="list-group-item" ng-if="ctx.snapshot">\n    <a target="_blank" href="{{ctx.snapshot}}"><img id="snapshot" ng-src="{{ctx.snapshot}}"></a>\n  </li>\n  <li class="list-group-item">\n    <ul>\n      <li>guests: {{ctx.stat.imgInPool || 0}}</li>\n      <li>placed: {{ctx.stat.imgPlaced || 0}}</li>\n      <li>failed: {{ctx.stat.imgFailed || 0}}</li>\n    </ul>\n  </li>\n</ul>\n';
+module.exports = '<style>\n  img#snapshot {\n    width: 300px;\n  }\n</style>\n<ul class="list-group">\n  <li class="list-group-item">\n    <label>Draw interval:</label>\n    <input type="range" min="100" max="5000" step="100" ng-model="ctx.drawInterval"></input>{{ctx.drawInterval}}ms\n  </li>\n  <li class="list-group-item">\n    <label>Transition:</label>\n    <input type="range" min="0.1" max="2.0" step="0.1" ng-model="ctx.transPulseWidth"></input>{{ctx.transPulseWidth * ctx.drawInterval}}ms\n  </li>\n  <li class="list-group-item">\n    <label>Signature width:</label>\n    <input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[0]"></input>{{ctx.imgSize[0]}}\n  </li>\n  <li class="list-group-item">\n    <label>Signature height:</label>\n    <input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[1]"></input>{{ctx.imgSize[1]}}\n  </li>\n  <li class="list-group-item">\n    <label>Signature limits:</label>\n    <input type="range" min="100" max="1000" step="100" ng-model="ctx.imgLimit"></input>{{ctx.imgLimit}}\n  </li>\n  <li class="list-group-item">\n    <label>Blank reserved</label>\n    <input type="range" min="0.01" max="0.05" step="0.01" ng-model="ctx.blankArea"></input>{{ctx.blankArea * 100}}%\n  </li>\n  <li class="list-group-item">\n    <label>Print size</label>\n    <input type="range" min="1" max="4" step="0.5" ng-model="ctx.printScale"></input>{{ctx.dispSize[0] * ctx.printScale}} * {{ctx.dispSize[1] * ctx.printScale}}\n  </li>\n  <li class="list-group-item">\n    <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>\n    <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>\n    <button class="btn btn-warning" ng-click="ctx.pause()" ng-if="ctx.stat.stat === \'playing\'">pause</button>\n    <button class="btn btn-warning" ng-click="ctx.resume()" ng-if="ctx.stat.stat === \'paused\'">resume</button>\n    <button class="btn btn-info" ng-click="ctx.print()" ng-if="ctx.stat.stat">print</button>\n  </li>\n  <li class="list-group-item" ng-if="ctx.snapshot">\n    <a target="_blank" href="{{ctx.snapshot}}"><img id="snapshot" ng-src="{{ctx.snapshot}}"></a>\n  </li>\n  <li class="list-group-item">\n    <ul>\n      <li>guests: {{ctx.stat.imgInPool || 0}}</li>\n      <li>placed: {{ctx.stat.imgPlaced || 0}}</li>\n      <li>failed: {{ctx.stat.imgFailed || 0}}</li>\n    </ul>\n  </li>\n</ul>\n';
 });
 require.alias("mbostock-d3/d3.js", "d3-cloud-for-angular/deps/d3/d3.js");
 require.alias("mbostock-d3/index-browserify.js", "d3-cloud-for-angular/deps/d3/index-browserify.js");
