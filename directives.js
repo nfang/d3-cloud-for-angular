@@ -85,18 +85,25 @@ require('./module')
       return this.images.length;
     };
 
-    var timers = {};
+    var timer;
     var imgPool = new ImgPool();
     var stat = opts.stat = {};
+
+    var pause = opts.pause = function pause() {
+      stat.stat = "paused";
+      $timeout.cancel(timer);
+    }
+
+    var resume = opts.resume = function resume() {
+      stat.stat = "playing";
+      step();
+    }
 
     /*
      * rest to ready status
      */
     var reset = opts.reset = function reset() {
-      _.each(timers,function (d) {
-        $timeout.cancel(d);
-      });
-      timers = {};
+      pause();
       imgPool.reset();
       stat = opts.stat = {
         imgFailed: 0,
@@ -111,11 +118,12 @@ require('./module')
       } else if (imgPool.getLength()) {
         cloud.addImg(imgPool.random());
       }
-      timers.draw = $timeout(step, opts.drawInterval);
+      timer = $timeout(step, opts.drawInterval);
     }
 
     // start cloud layout
     function start() {
+      stat.stat = "playing";
       // TODO: fix the ugly callback for image async loading
       var bg = new Image();
       bg.src = opts.bgImg;
@@ -238,7 +246,9 @@ require('./module')
             ctx.drawImage(img, 0, 0, width, height);
             canvas.toBlob(function (blob) {
               var url = URL.createObjectURL(blob);
-              opts.snapshot = url;
+              scope.$apply(function () {
+                opts.snapshot = url;
+              });
             });
           }
         });
