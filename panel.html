@@ -30,7 +30,7 @@
   </li>
   <li class="list-group-item">
     <label>Print size</label>
-    <input type="range" min="1" max="10" step="0.5" ng-model="ctx.printScale"></input>{{ctx.dispSize[0] * ctx.printScale}} * {{ctx.dispSize[1] * ctx.printScale}}
+    <input type="range" min="1" max="4" step="0.5" ng-model="ctx.printScale"></input>{{ctx.dispSize[0] * ctx.printScale}} * {{ctx.dispSize[1] * ctx.printScale}}
   </li>
   <li class="list-group-item">
     <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>
