@@ -10,6 +10,7 @@ require('./module')
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
+      printScale: 2,
       bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
@@ -211,10 +212,11 @@ require('./module')
         var print = sky.selectAll('canvas').data(sky.selectAll('svg')[0]);
 
         print.enter().append('canvas').style('display', 'none');
-
+        var width = opts.dispSize[0] * opts.printScale,
+            height = opts.dispSize[1] * opts.printScale;
         print
-        .attr('width', opts.dispSize[0])
-        .attr('height', opts.dispSize[1])
+        .attr('width', width)
+        .attr('height', height)
         .each(function (svg) {
           var canvas = this;
           // http://svgopen.org/2010/papers/62-From_SVG_to_Canvas_and_Back/
@@ -233,8 +235,7 @@ require('./module')
 
             // Restore the transform
             ctx.restore();
-
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, width, height);
             canvas.toBlob(function (blob) {
               var url = URL.createObjectURL(blob);
               opts.snapshot = url;
