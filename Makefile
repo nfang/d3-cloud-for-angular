@@ -1,7 +1,7 @@
 example/bower: bower.json
 	bower install
 
-example/rogerz-d3-cloud-for-angular: example/build
+example/rogerz-d3-cloud-for-angular: example/build/d3-cloud-for-angular
 	rm -rf example/rogerz-d3-cloud-for-angular
 	cp -R example/build/d3-cloud-for-angular example/rogerz-d3-cloud-for-angular
 
@@ -14,6 +14,6 @@ components: component.json
 	@component install --dev
 
 clean:
-	rm -fr example/build components
+	rm -fr example/{build,bower,rogerz-d3-cloud-for-angular} components 
 
 .PHONY: clean example
