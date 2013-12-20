@@ -11,6 +11,7 @@ require('./module')
       dispSize: [1080, 640],
       imgSize: [64, 32],
       printScale: 2,
+      bgColor: 'black',
       bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
@@ -123,13 +124,15 @@ require('./module')
 
     // start cloud layout
     function start() {
+      $scope.init();
       stat.stat = "playing";
       // TODO: fix the ugly callback for image async loading
       var bg = new Image();
       bg.src = opts.bgImg;
       bg.onload = function () {
         cloud.setBgImg({
-          img: bg
+          img: bg,
+          color: opts.bgColorqq
         });
         cloud.start();
         step();
@@ -170,22 +173,23 @@ require('./module')
       var sky = d3.select(elem[0]);// cloud must be in the sky :)
       var opts = scope.opts;
 
-      scope.$watchCollection('opts.dispSize', function (value) {
-        var svg = sky.selectAll('svg').data([value]);
+      scope.init = function () {
+        var dispSize = opts.dispSize;
+        var svg = sky.selectAll('svg').data([dispSize]);
 
         svg.enter().append('svg').attr({
                     'xmlns': 'http://www.w3.org/2000/svg',
                     'xmlns:xmlns:xlink': 'http://www.w3.org/1999/xlink', // hack: doubling xmlns: so it doesn't disappear once in the DOM
-                    version: '1.1'
+                    'version': '1.1'
                 });
 
         svg.attr('width', function (d) { return d[0];})
         .attr('height', function (d) { return d[1];})
-        .style('background', 'black');// TODO: configurable
+        .style('background', opts.bgColor);
 
         svg.exit().remove();
 
-        var offset = [value[0] / 2, value[1] / 2];
+        var offset = [dispSize[0] / 2, dispSize[1] / 2];
         var g = svg.selectAll('g').data([offset])
                 .attr('transform', function (d) { return format('translate(%s)', d);});
 
@@ -193,7 +197,7 @@ require('./module')
         .attr('transform', function (d) { return format('translate(%s)', d);});
 
         g.exit().remove();
-      });
+      };
 
       scope.draw = function (tags, bounds, d) {
         var g = sky.select('svg').select('g');
