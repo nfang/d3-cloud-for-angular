@@ -3,6 +3,7 @@ var format = require('format').format;
 var d3Cloud = require('d3-cloud').cloud;
 var _ = require('underscore');
 var imgPath = 'rogerz-d3-cloud-for-angular';
+var ImgPool = require('./img-pool.js');
 
 require('./module')
 .directive('d3Cloud', function () {
@@ -42,52 +43,8 @@ require('./module')
                    .on('failed', failed)
                    .on('erased', function (tags) {stat.imgPlaced = tags.length;});
 
-
-    function ImgPool() {
-      this.images = [];
-    }
-
-    ImgPool.prototype.random = function () {
-      return this.images[Math.floor(Math.random() * this.images.length)];
-    };
-
-    ImgPool.prototype.push = function (image) {
-      var self = this;
-      var img = new Image();
-
-
-      img.onload = function () {
-        self.images.push({
-          img: img
-        });
-      };
-
-      if(/^https?:\/\//.test(image)) {
-        img.crossOrigin = 'Anonymous';
-      }
-      img.src = image;
-      img.width = opts.imgSize[0];
-      img.height = opts.imgSize[1];
-    };
-
-    ImgPool.prototype.merge = function (images) {
-      var self = this;
-      images.forEach (function (image) {
-        self.push(image.href);
-      });
-    };
-
-    ImgPool.prototype.reset = function () {
-      this.images = [];
-      signatureApi.reset();
-    };
-
-    ImgPool.prototype.getLength = function () {
-      return this.images.length;
-    };
-
     var timer;
-    var imgPool = new ImgPool();
+    var imgPool = new ImgPool({imgSize: opts.imgSize});
     var stat = opts.stat = {};
 
     var pause = opts.pause = function pause() {
@@ -106,6 +63,7 @@ require('./module')
     var reset = opts.reset = function reset() {
       pause();
       imgPool.reset();
+      signatureApi.reset();
       stat = opts.stat = {
         imgFailed: 0,
         imgPlaced: 0,
@@ -116,7 +74,7 @@ require('./module')
     function step() {
       if (stat.imgPlaced > opts.imgLimit) {
         cloud.removeImg(stat.imgPlaced - opts.imgLimit);
-      } else if (imgPool.getLength()) {
+      } else if (imgPool.total()) {
         cloud.addImg(imgPool.random());
       }
       timer = $timeout(step, opts.drawInterval);

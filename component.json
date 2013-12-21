@@ -22,7 +22,8 @@
   "scripts": [
     "index.js",
     "module.js",
-    "directives.js"
+    "directives.js",
+    "img-pool.js"
   ],
   "styles": [],
   "templates": [
