@@ -11,7 +11,7 @@ require('./module')
       dispSize: [1080, 640],
       imgSize: [64, 32],
       printScale: 2,
-      bgColor: 'black',
+      bgColor: 'grey',
       bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
       blankArea: 0.01,// keep at least 10% blank area
@@ -156,6 +156,17 @@ require('./module')
       });
       signatureApi.poll();
       start();
+    };
+
+    opts.selectBg = function (files) {
+      var file = files[0];
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        $scope.$apply(function () {
+          opts.bgImg = e.target.result;
+        });
+      };
+      reader.readAsDataURL(file);
     };
 
     opts.print = function () {

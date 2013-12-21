@@ -35,7 +35,7 @@
   <tr>
     <th>Background</th>
     <td><input type="color" ng-model="ctx.bgColor"></input></td>
-    <td colspan="5"><input type="text" class="form-control" ng-model="ctx.bgImg"></input></td>
+    <td colspan="5"><input type="file" ng-file-select="ctx.selectBg($files)"></input></td>
   </tr>
   <tr>
     <th>Print</th>
@@ -47,7 +47,7 @@
   <tr>
     <th>Preview</th>
     <td colspan="3">
-      <img class="inline img-thumbnail"ng-src="{{ctx.bgImg}}"></img>
+      <img class="inline img-thumbnail"ng-src="{{ctx.bgImg}}" ng-style="{background: ctx.bgColor}"></img>
     </td>
     <td colspan="3">
       <a ng-if="ctx.snapshot" target="_blank" ng-href="{{ctx.snapshot}}"><img class="inline img-thumbnail" ng-src="{{ctx.snapshot}}"></a>
