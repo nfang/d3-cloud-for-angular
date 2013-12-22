@@ -75,7 +75,8 @@ require('./module')
       stat = opts.stat = {
         imgFailed: 0,
         imgPlaced: 0,
-        imgInPool: 0
+        imgTotal: 0,
+        apiError: 0
       };
     };
 
@@ -118,12 +119,16 @@ require('./module')
     // connect to remote server
     opts.connect = function connect() {
       reset();
-      signatureApi.on('data', function (data) {
+      signatureApi
+      .on('data', function (data) {
         var images = _.map(data, function (d) {
           return d.href;
         });
         imgPool.add(images);
-        stat.imgInPool = imgPool.total();
+        stat.imgTotal = imgPool.total();
+      })
+      .on('error', function () {
+        stat.apiError ++;
       });
       signatureApi.poll();
       start();

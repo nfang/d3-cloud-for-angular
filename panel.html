@@ -65,12 +65,20 @@
     </td>
   </tr>
 </table>
-<ul class="list-group">
-  <li class="list-group-item">
-    <ul>
-      <li>guests: {{ctx.stat.imgInPool || 0}}</li>
-      <li>placed: {{ctx.stat.imgPlaced || 0}}</li>
-      <li>failed: {{ctx.stat.imgFailed || 0}}</li>
-    </ul>
-  </li>
-</ul>
+<table class="table">
+  <tr>
+    <th>Display</th>
+    <td>placed: </td>
+    <td>{{ctx.stat.imgPlaced || 0}}</td>
+    <td>failed: </td>
+    <td ng-class="{warning: ctx.stat.imgFailed}">{{ctx.stat.imgFailed || 0}}</td>
+  </tr>
+  <tr>
+    <th>API</th>
+    <td>guests: </td>
+    <td>{{ctx.stat.imgTotal || 0}}</td>
+    <td>error: </td>
+    <td ng-class="{warning: ctx.stat.apiError}">{{ctx.stat.apiError || 0}}</td>
+  </tr>
+</table>
+
