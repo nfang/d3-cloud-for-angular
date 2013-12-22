@@ -5,12 +5,12 @@
   "version": "0.0.1",
   "keywords": [],
   "dependencies": {
-    "mbostock/d3": "*",
-    "rogerz/d3-cloud": "*",
-    "samsonjs/format": "*",
-    "jashkenas/underscore": "*",
-    "rogerz/control-panel-for-angular": "*",
-    "rogerz/signature-api-legacy-for-angular": "*"
+    "mbostock/d3": "v3.3.13",
+    "rogerz/d3-cloud": "0.0.2",
+    "samsonjs/format": "v0.2.1",
+    "jashkenas/underscore": "6c102a76dbebe7b4da0c245a734483af6df644c9",
+    "rogerz/control-panel-for-angular": "0.0.2",
+    "rogerz/signature-api-legacy-for-angular": "0.0.2"
   },
   "development": {},
   "paths": [
