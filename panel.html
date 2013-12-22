@@ -28,9 +28,9 @@
     <td>maximum</td>
     <td>{{ctx.imgLimit}}</td>
     <td><input type="range" min="100" max="1000" step="100" ng-model="ctx.imgLimit"></input></td>
-    <td>reserve</td>
-    <td>{{ctx.blankArea * 100}}%</td>
-    <td><input type="range" min="0.01" max="0.05" step="0.01" ng-model="ctx.blankArea"></input></td>
+    <td>erase ratio</td>
+    <td>{{ctx.eraseRatio * 100}}%</td>
+    <td><input type="range" min="0.01" max="0.05" step="0.01" ng-model="ctx.eraseRatio"></input></td>
   </tr>
   <tr>
     <th>Background</th>
@@ -56,11 +56,12 @@
   <tr>
     <th>Control</th>
     <td colspan="6"> 
-    <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>
-    <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>
-    <button class="btn btn-warning" ng-click="ctx.pause()" ng-if="ctx.stat.stat === 'playing'">pause</button>
-    <button class="btn btn-warning" ng-click="ctx.resume()" ng-if="ctx.stat.stat === 'paused'">resume</button>
-    <button class="btn btn-info" ng-click="ctx.print()" ng-if="ctx.stat.stat">print</button>
+      <input type="checkbox" ng-model="ctx.repeat"><label>repeat</label>
+      <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>
+      <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>
+      <button class="btn btn-warning" ng-click="ctx.pause()" ng-if="ctx.stat.stat === 'playing'">pause</button>
+      <button class="btn btn-warning" ng-click="ctx.resume()" ng-if="ctx.stat.stat === 'paused'">resume</button>
+      <button class="btn btn-info" ng-click="ctx.print()" ng-if="ctx.stat.stat">print</button>
     </td>
   </tr>
 </table>

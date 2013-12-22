@@ -15,8 +15,9 @@ require('./module')
       bgColor: 'grey',
       bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
-      blankArea: 0.01,// keep at least 10% blank area
+      eraseRatio: 0.01,// erase x * 100% signatures when place failed
       drawInterval: 2000,
+      repeat: false, // repeat existing signatures
       transPulseWidth: 1,// transition duration / draw interval
       transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
@@ -30,7 +31,7 @@ require('./module')
     function failed(tags) {
       stat.imgFailed++;
       $scope.$apply(function () {
-        opts.imgLimit = Math.floor(tags.length * (1 - opts.blankArea));
+        opts.imgLimit = Math.floor(tags.length * (1 - opts.eraseRatio));
       });
     }
 
@@ -44,8 +45,15 @@ require('./module')
                    .on('erased', function (tags) {stat.imgPlaced = tags.length;});
 
     var timer;
-    var imgPool = new ImgPool({imgSize: opts.imgSize});
+    var imgPool = new ImgPool();
     var stat = opts.stat = {};
+
+    $scope.$watch('opts.repeat', function () {
+      imgPool.option(_.pick(opts, 'repeat'));
+    });
+    $scope.$watchCollection('opts.imgSize', function () {
+      imgPool.option(_.pick(opts, 'imgSize'));
+    });
 
     var pause = opts.pause = function pause() {
       stat.stat = "paused";
@@ -74,8 +82,8 @@ require('./module')
     function step() {
       if (stat.imgPlaced > opts.imgLimit) {
         cloud.removeImg(stat.imgPlaced - opts.imgLimit);
-      } else if (imgPool.total()) {
-        cloud.addImg(imgPool.random());
+      } else {
+        cloud.addImg(imgPool.next());
       }
       timer = $timeout(step, opts.drawInterval);
     }
@@ -100,8 +108,10 @@ require('./module')
     // run simulation
     opts.simulate = function simulate() {
       reset();
-      imgPool.push(imgPath + '/images/1.png');
-      imgPool.push(imgPath + '/images/2.png');
+      var images = _.range(1,3).map(function (d) {
+        return format('%s/images/%d.png', imgPath, d);
+      });
+      imgPool.add(images);
       start();
     };
 
@@ -109,8 +119,11 @@ require('./module')
     opts.connect = function connect() {
       reset();
       signatureApi.on('data', function (data) {
-        imgPool.merge(data);
-        stat.imgInPool = imgPool.getLength();
+        var images = _.map(data, function (d) {
+          return d.href;
+        });
+        imgPool.add(images);
+        stat.imgInPool = imgPool.total();
       });
       signatureApi.poll();
       start();
