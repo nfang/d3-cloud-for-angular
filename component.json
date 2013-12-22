@@ -2,7 +2,7 @@
   "name": "d3-cloud-for-angular",
   "repo": "rogerz/d3-cloud-for-angular",
   "description": "d3-cloud wrapped in AngularJS",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "keywords": [],
   "dependencies": {
     "mbostock/d3": "*",
