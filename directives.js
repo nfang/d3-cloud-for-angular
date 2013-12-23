@@ -7,7 +7,7 @@ var ImgPool = require('./img-pool.js');
 
 require('./module')
 .directive('d3Cloud', function () {
-  function controller($scope, $timeout, controlPanel, signatureApi) {
+  function controller($scope, $timeout, $window, controlPanel, signatureApi) {
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
@@ -36,14 +36,7 @@ require('./module')
     }
 
     // TODO: define angular constant
-    var cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
-                   .spiral('rectangular')
-                   .startPos('point')
-                   .timeInterval(10)
-                   .on('placed', update)
-                   .on('failed', failed)
-                   .on('erased', function (tags) {stat.imgPlaced = tags.length;});
-
+    var cloud;
     var timer;
     var imgPool = new ImgPool();
     var stat = opts.stat = {};
@@ -91,7 +84,20 @@ require('./module')
 
     // start cloud layout
     function start() {
+      // auto fit to window size
+      opts.dispSize = [
+        $window.innerWidth,
+        $window.innerHeight
+      ];
       $scope.init();
+      cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
+                   .spiral('rectangular')
+                   .startPos('point')
+                   .timeInterval(10)
+                   .on('placed', update)
+                   .on('failed', failed)
+                   .on('erased', function (tags) {stat.imgPlaced = tags.length;});
+
       stat.stat = "playing";
       // TODO: fix the ugly callback for image async loading
       var bg = new Image();
@@ -99,7 +105,7 @@ require('./module')
       bg.onload = function () {
         cloud.setBgImg({
           img: bg,
-          color: opts.bgColorqq
+          color: opts.bgColor
         });
         cloud.start();
         step();
@@ -159,24 +165,27 @@ require('./module')
     link: function (scope, elem) {
       var sky = d3.select(elem[0]);// cloud must be in the sky :)
       var opts = scope.opts;
+      var size = {};
 
       scope.init = function () {
-        var dispSize = opts.dispSize;
-        var svg = sky.selectAll('svg').data([dispSize]);
-
-        svg.enter().append('svg').attr({
+        size = {
+          width: opts.dispSize[0],
+          height: opts.dispSize[1]
+        };
+        var svg = sky.selectAll('svg').data([size]);
+       svg.enter().append('svg').attr({
                     'xmlns': 'http://www.w3.org/2000/svg',
                     'xmlns:xmlns:xlink': 'http://www.w3.org/1999/xlink', // hack: doubling xmlns: so it doesn't disappear once in the DOM
                     'version': '1.1'
                 });
 
-        svg.attr('width', function (d) { return d[0];})
-        .attr('height', function (d) { return d[1];})
+        svg.attr('width', function (d) { return d.width;})
+        .attr('height', function (d) { return d.height;})
         .style('background', opts.bgColor);
 
         svg.exit().remove();
 
-        var offset = [dispSize[0] / 2, dispSize[1] / 2];
+        var offset = [size.width / 2, size.height / 2];
         var g = svg.selectAll('g').data([offset])
                 .attr('transform', function (d) { return format('translate(%s)', d);});
 
@@ -198,7 +207,7 @@ require('./module')
           .attr('y', function (d) { return -d.img.height / 2;})
           .attr('width', function (d) { return d.img.width;})
           .attr('height', function (d) { return d.img.height;})
-          .attr('transform', format('scale(%f)', opts.dispSize[0] / d.img.width))
+          .attr('transform', format('scale(%f)', size.width / d.img.width))
         .transition().duration(opts.transDuration())
           .attr('transform', function(d) {
             return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
@@ -211,8 +220,8 @@ require('./module')
         var print = sky.selectAll('canvas').data(sky.selectAll('svg')[0]);
 
         print.enter().append('canvas').style('display', 'none');
-        var width = opts.dispSize[0] * opts.printScale,
-            height = opts.dispSize[1] * opts.printScale;
+        var width = size.width * opts.printScale,
+            height = size.height * opts.printScale;
         print
         .attr('width', width)
         .attr('height', height)
