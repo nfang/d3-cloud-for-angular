@@ -9628,6 +9628,9 @@ require.register("rogerz-d3-cloud/d3.layout.cloud.js", function(exports, require
      */
     // Add more images
     cloud.addImg = function (d) {
+      if (!d) {
+        return;
+      }
       var tag = _.clone(d);
       tag.id = generateId();
       // TODO: check image loading
@@ -10893,11 +10896,19 @@ require.register("jashkenas-underscore/underscore.js", function(exports, require
   };
 
   // Partially apply a function by creating a version that has had some of its
-  // arguments pre-filled, without changing its dynamic `this` context.
+  // arguments pre-filled, without changing its dynamic `this` context. _ acts
+  // as a placeholder, allowing any combination of arguments to be pre-filled.
   _.partial = function(func) {
-    var args = slice.call(arguments, 1);
+    var boundArgs = slice.call(arguments, 1);
     return function() {
-      return func.apply(this, args.concat(slice.call(arguments)));
+      var args = slice.call(boundArgs);
+      _.each(arguments, function(arg) {
+        var index = args.indexOf(_);
+        args[index >= 0 ? index : args.length] = arg;
+      });
+      return func.apply(this, _.map(args, function(value) {
+        return value === _ ? void 0 : value;
+      }));
     };
   };
 
@@ -11877,14 +11888,15 @@ http://backend.addr/hphoto/signatures/1/1.png
 
     function on(event, fn) {
       events[event] = fn;
+      return this;
     }
 
     function poll() {
       if (!init) {
         init = true;
-        list(events.data);
+        list(events.data, events.error);
       } else {
-        update(events.data);
+        update(events.data, events.error);
       }
       timer = $timeout(poll, ctx.pollInterval);
     }
@@ -11932,7 +11944,7 @@ module.exports = angular.module('rogerz/d3Cloud', [
 ]).config(function ($compileProvider) {
   // the snapshot is created as blob
   $compileProvider.aHrefSanitizationWhitelist(/^blob:/);
-  $compileProvider.imgSrcSanitizationWhitelist(/^blob:/);
+  $compileProvider.imgSrcSanitizationWhitelist(/^(blob|http|data):/);
 });
 
 });
@@ -11942,18 +11954,21 @@ var format = require('format').format;
 var d3Cloud = require('d3-cloud').cloud;
 var _ = require('underscore');
 var imgPath = 'rogerz-d3-cloud-for-angular';
+var ImgPool = require('./img-pool.js');
 
 require('./module')
 .directive('d3Cloud', function () {
-  function controller($scope, $timeout, controlPanel, signatureApi) {
+  function controller($scope, $timeout, $window, controlPanel, signatureApi) {
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
       printScale: 2,
+      bgColor: 'grey',
       bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
-      blankArea: 0.01,// keep at least 10% blank area
+      eraseRatio: 0.01,// erase x * 100% signatures when place failed
       drawInterval: 2000,
+      repeat: false, // repeat existing signatures
       transPulseWidth: 1,// transition duration / draw interval
       transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
@@ -11967,66 +11982,22 @@ require('./module')
     function failed(tags) {
       stat.imgFailed++;
       $scope.$apply(function () {
-        opts.imgLimit = Math.floor(tags.length * (1 - opts.blankArea));
+        opts.imgLimit = Math.floor(tags.length * (1 - opts.eraseRatio));
       });
     }
 
     // TODO: define angular constant
-    var cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
-                   .spiral('rectangular')
-                   .startPos('point')
-                   .timeInterval(10)
-                   .on('placed', update)
-                   .on('failed', failed)
-                   .on('erased', function (tags) {stat.imgPlaced = tags.length;});
-
-
-    function ImgPool() {
-      this.images = [];
-    }
-
-    ImgPool.prototype.random = function () {
-      return this.images[Math.floor(Math.random() * this.images.length)];
-    };
-
-    ImgPool.prototype.push = function (image) {
-      var self = this;
-      var img = new Image();
-
-
-      img.onload = function () {
-        self.images.push({
-          img: img
-        });
-      };
-
-      if(/^https?:\/\//.test(image)) {
-        img.crossOrigin = 'Anonymous';
-      }
-      img.src = image;
-      img.width = opts.imgSize[0];
-      img.height = opts.imgSize[1];
-    };
-
-    ImgPool.prototype.merge = function (images) {
-      var self = this;
-      images.forEach (function (image) {
-        self.push(image.href);
-      });
-    };
-
-    ImgPool.prototype.reset = function () {
-      this.images = [];
-      signatureApi.reset();
-    };
-
-    ImgPool.prototype.getLength = function () {
-      return this.images.length;
-    };
-
+    var cloud;
     var timer;
     var imgPool = new ImgPool();
     var stat = opts.stat = {};
+
+    $scope.$watch('opts.repeat', function () {
+      imgPool.option(_.pick(opts, 'repeat'));
+    });
+    $scope.$watchCollection('opts.imgSize', function () {
+      imgPool.option(_.pick(opts, 'imgSize'));
+    });
 
     var pause = opts.pause = function pause() {
       stat.stat = "paused";
@@ -12044,31 +12015,48 @@ require('./module')
     var reset = opts.reset = function reset() {
       pause();
       imgPool.reset();
+      signatureApi.reset();
       stat = opts.stat = {
         imgFailed: 0,
         imgPlaced: 0,
-        imgInPool: 0
+        imgTotal: 0,
+        apiError: 0
       };
     };
 
     function step() {
       if (stat.imgPlaced > opts.imgLimit) {
         cloud.removeImg(stat.imgPlaced - opts.imgLimit);
-      } else if (imgPool.getLength()) {
-        cloud.addImg(imgPool.random());
+      } else {
+        cloud.addImg(imgPool.next());
       }
       timer = $timeout(step, opts.drawInterval);
     }
 
     // start cloud layout
     function start() {
+      // auto fit to window size
+      opts.dispSize = [
+        $window.innerWidth,
+        $window.innerHeight
+      ];
+      $scope.init();
+      cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
+                   .spiral('rectangular')
+                   .startPos('point')
+                   .timeInterval(10)
+                   .on('placed', update)
+                   .on('failed', failed)
+                   .on('erased', function (tags) {stat.imgPlaced = tags.length;});
+
       stat.stat = "playing";
       // TODO: fix the ugly callback for image async loading
       var bg = new Image();
       bg.src = opts.bgImg;
       bg.onload = function () {
         cloud.setBgImg({
-          img: bg
+          img: bg,
+          color: opts.bgColor
         });
         cloud.start();
         step();
@@ -12078,20 +12066,40 @@ require('./module')
     // run simulation
     opts.simulate = function simulate() {
       reset();
-      imgPool.push(imgPath + '/images/1.png');
-      imgPool.push(imgPath + '/images/2.png');
+      var images = _.range(1,3).map(function (d) {
+        return format('%s/images/%d.png', imgPath, d);
+      });
+      imgPool.add(images);
       start();
     };
 
     // connect to remote server
     opts.connect = function connect() {
       reset();
-      signatureApi.on('data', function (data) {
-        imgPool.merge(data);
-        stat.imgInPool = imgPool.getLength();
+      signatureApi
+      .on('data', function (data) {
+        var images = _.map(data, function (d) {
+          return d.href;
+        });
+        imgPool.add(images);
+        stat.imgTotal = imgPool.total();
+      })
+      .on('error', function () {
+        stat.apiError ++;
       });
       signatureApi.poll();
       start();
+    };
+
+    opts.selectBg = function (files) {
+      var file = files[0];
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        $scope.$apply(function () {
+          opts.bgImg = e.target.result;
+        });
+      };
+      reader.readAsDataURL(file);
     };
 
     opts.print = function () {
@@ -12108,23 +12116,27 @@ require('./module')
     link: function (scope, elem) {
       var sky = d3.select(elem[0]);// cloud must be in the sky :)
       var opts = scope.opts;
+      var size = {};
 
-      scope.$watchCollection('opts.dispSize', function (value) {
-        var svg = sky.selectAll('svg').data([value]);
-
-        svg.enter().append('svg').attr({
+      scope.init = function () {
+        size = {
+          width: opts.dispSize[0],
+          height: opts.dispSize[1]
+        };
+        var svg = sky.selectAll('svg').data([size]);
+       svg.enter().append('svg').attr({
                     'xmlns': 'http://www.w3.org/2000/svg',
                     'xmlns:xmlns:xlink': 'http://www.w3.org/1999/xlink', // hack: doubling xmlns: so it doesn't disappear once in the DOM
-                    version: '1.1'
+                    'version': '1.1'
                 });
 
-        svg.attr('width', function (d) { return d[0];})
-        .attr('height', function (d) { return d[1];})
-        .style('background', 'black');// TODO: configurable
+        svg.attr('width', function (d) { return d.width;})
+        .attr('height', function (d) { return d.height;})
+        .style('background', opts.bgColor);
 
         svg.exit().remove();
 
-        var offset = [value[0] / 2, value[1] / 2];
+        var offset = [size.width / 2, size.height / 2];
         var g = svg.selectAll('g').data([offset])
                 .attr('transform', function (d) { return format('translate(%s)', d);});
 
@@ -12132,7 +12144,7 @@ require('./module')
         .attr('transform', function (d) { return format('translate(%s)', d);});
 
         g.exit().remove();
-      });
+      };
 
       scope.draw = function (tags, bounds, d) {
         var g = sky.select('svg').select('g');
@@ -12146,7 +12158,7 @@ require('./module')
           .attr('y', function (d) { return -d.img.height / 2;})
           .attr('width', function (d) { return d.img.width;})
           .attr('height', function (d) { return d.img.height;})
-          .attr('transform', format('scale(%f)', opts.dispSize[0] / d.img.width))
+          .attr('transform', format('scale(%f)', size.width / d.img.width))
         .transition().duration(opts.transDuration())
           .attr('transform', function(d) {
             return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
@@ -12159,8 +12171,8 @@ require('./module')
         var print = sky.selectAll('canvas').data(sky.selectAll('svg')[0]);
 
         print.enter().append('canvas').style('display', 'none');
-        var width = opts.dispSize[0] * opts.printScale,
-            height = opts.dispSize[1] * opts.printScale;
+        var width = size.width * opts.printScale,
+            height = size.height * opts.printScale;
         print
         .attr('width', width)
         .attr('height', height)
@@ -12197,6 +12209,84 @@ require('./module')
 });
 
 });
+require.register("d3-cloud-for-angular/img-pool.js", function(exports, require, module){
+var _ = require('underscore');
+
+function ImgPool (opts) {
+  this.queue = [];
+  this.pool = [];
+  this.opts = opts || {
+    repeat: false,
+    imgSize: [64, 32]
+  };
+};
+
+ImgPool.prototype.option = function (opts) {
+  this.opts = _.extend(this.opts, opts);
+};
+
+// Pick a random image from pool
+ImgPool.prototype.random = function () {
+  var pool = this.pool;
+  if (pool.length) {
+    return this.pool[Math.floor(Math.random() * pool.length)];
+  } else {
+    return null;
+  }
+};
+
+ImgPool.prototype.addBySrc = function (imgSrc) {
+  var self = this;
+  var img = new Image();
+
+  img.onload = function () {
+    self.queue.push({
+      img: img
+    });
+  };
+
+  if(/^https?:\/\//.test(imgSrc)) {
+    img.crossOrigin = 'Anonymous';
+  }
+  img.src = imgSrc;
+  if (this.opts.imgSize) {
+    img.width = this.opts.imgSize[0];
+    img.height = this.opts.imgSize[1];
+  }
+};
+
+ImgPool.prototype.next = function () {
+  var queue = this.queue,
+      obj = null;
+
+  if (this.queue.length) {
+    obj = queue.shift();
+    this.pool.push(obj);
+  } else if (this.opts.repeat){
+    obj = this.random();
+  }
+
+  return obj;
+};
+
+ImgPool.prototype.add = function (images) {
+  var self = this;
+  images.forEach (function (image) {
+    self.addBySrc(image);
+  });
+};
+
+ImgPool.prototype.reset = function () {
+  this.pool = [];
+  this.queue = [];
+};
+
+ImgPool.prototype.total = function () {
+  return this.pool.length + this.queue.length;
+};
+
+exports = module.exports = ImgPool;
+});
 
 
 
@@ -12208,14 +12298,14 @@ require('./module')
 
 
 require.register("rogerz-control-panel-for-angular/template.html", function(exports, require, module){
-module.exports = '<div id="side-bar" ng-class="{inactive: inactive}">\n  <ul id="sb-hot-zone">\n    <li>\n      <a id="sb-toggle" ng-click="toggle()">\n        <i class="glyphicon glyphicon-cog"></i>\n      </a>\n    </li>\n  </ul>\n  <ul id="sb-tabs">\n    <li ng-repeat="panel in panels">\n      <a ng-click="activate($index)">\n        <ni class="glyphicon {{panel.iconClass || \'glyphicon-cog\'}}"></i>\n      </a>\n    </li>\n  </ul>\n</div>\n<div id="control-panel" ng-hide="inactive">\n  <div angular-bind-template="template"></div>\n</div>\n';
+module.exports = '<div id="side-bar" ng-class="{inactive: inactive}">\n  <ul id="sb-hot-zone">\n    <li>\n      <a id="sb-toggle" ng-click="toggle()">\n        <i class="glyphicon glyphicon-cog"></i>\n      </a>\n    </li>\n  </ul>\n  <ul id="sb-tabs">\n    <li ng-repeat="panel in panels">\n      <a ng-click="activate($index)">\n        <ni class="glyphicon {{panel.iconClass || \'glyphicon-cog\'}}"></i>\n      </a>\n    </li>\n  </ul>\n</div>\n<div id="control-panel" class="panel" ng-hide="inactive">\n  <div angular-bind-template="template"></div>\n</div>\n';
 });
 
 require.register("rogerz-signature-api-legacy-for-angular/lib/panel.html", function(exports, require, module){
-module.exports = '<ul class="list-group">\n  <li class="list-group-item">\n    <label>Server</label>\n    <select ng-model="ctx.server">\n      <option ng-repeat="host in ctx.hosts" value="{{host.address}}">{{host.name}}</option>\n    </select> {{ctx.server}}\n  </li>\n  <li class="list-group-item">\n    <label>Event ID:</label>\n    <input type="text" ng-model="ctx.eventId"></input>\n  </li>\n  <li class="list-group-item">\n    <label>Polling interval:</label>\n    <input type="range" min="1000" max="10000" step="1000" ng-model="ctx.pollInterval"></input>{{ctx.pollInterval}}ms\n  </li>\n</ul>\n';
+module.exports = '<ul class="list-group">\n  <li class="list-group-item">\n    <label>Server</label>\n    <input ng-model="ctx.server" list="servers">\n    <datalist id="servers">\n      <option ng-repeat="host in ctx.hosts" value="{{host.address}}">{{host.name}}</option>\n    </datalist>\n  </li>\n  <li class="list-group-item">\n    <label>Event ID:</label>\n    <input type="text" ng-model="ctx.eventId"></input>\n  </li>\n  <li class="list-group-item">\n    <label>Polling interval:</label>\n    <input type="range" min="1000" max="10000" step="1000" ng-model="ctx.pollInterval"></input>{{ctx.pollInterval}}ms\n  </li>\n</ul>\n';
 });
 require.register("d3-cloud-for-angular/panel.html", function(exports, require, module){
-module.exports = '<style>\n  img#snapshot {\n    width: 300px;\n  }\n</style>\n<ul class="list-group">\n  <li class="list-group-item">\n    <label>Draw interval:</label>\n    <input type="range" min="100" max="5000" step="100" ng-model="ctx.drawInterval"></input>{{ctx.drawInterval}}ms\n  </li>\n  <li class="list-group-item">\n    <label>Transition:</label>\n    <input type="range" min="0.1" max="2.0" step="0.1" ng-model="ctx.transPulseWidth"></input>{{ctx.transPulseWidth * ctx.drawInterval}}ms\n  </li>\n  <li class="list-group-item">\n    <label>Signature width:</label>\n    <input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[0]"></input>{{ctx.imgSize[0]}}\n  </li>\n  <li class="list-group-item">\n    <label>Signature height:</label>\n    <input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[1]"></input>{{ctx.imgSize[1]}}\n  </li>\n  <li class="list-group-item">\n    <label>Signature limits:</label>\n    <input type="range" min="100" max="1000" step="100" ng-model="ctx.imgLimit"></input>{{ctx.imgLimit}}\n  </li>\n  <li class="list-group-item">\n    <label>Blank reserved</label>\n    <input type="range" min="0.01" max="0.05" step="0.01" ng-model="ctx.blankArea"></input>{{ctx.blankArea * 100}}%\n  </li>\n  <li class="list-group-item">\n    <label>Print size</label>\n    <input type="range" min="1" max="4" step="0.5" ng-model="ctx.printScale"></input>{{ctx.dispSize[0] * ctx.printScale}} * {{ctx.dispSize[1] * ctx.printScale}}\n  </li>\n  <li class="list-group-item">\n    <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>\n    <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>\n    <button class="btn btn-warning" ng-click="ctx.pause()" ng-if="ctx.stat.stat === \'playing\'">pause</button>\n    <button class="btn btn-warning" ng-click="ctx.resume()" ng-if="ctx.stat.stat === \'paused\'">resume</button>\n    <button class="btn btn-info" ng-click="ctx.print()" ng-if="ctx.stat.stat">print</button>\n  </li>\n  <li class="list-group-item" ng-if="ctx.snapshot">\n    <a target="_blank" href="{{ctx.snapshot}}"><img id="snapshot" ng-src="{{ctx.snapshot}}"></a>\n  </li>\n  <li class="list-group-item">\n    <ul>\n      <li>guests: {{ctx.stat.imgInPool || 0}}</li>\n      <li>placed: {{ctx.stat.imgPlaced || 0}}</li>\n      <li>failed: {{ctx.stat.imgFailed || 0}}</li>\n    </ul>\n  </li>\n</ul>\n';
+module.exports = '<style>\n  img.inline {\n    width: 300px;\n    display: block;\n  }\n</style>\n<table class="table">\n  <tr>\n    <th>Draw</th>\n    <td>interval</td>\n    <td>{{ctx.drawInterval}}ms</td>\n    <td><input type="range" min="0" max="5000" step="100" ng-model="ctx.drawInterval"></input></td>\n    <td>transition</td>\n    <td>{{ctx.transPulseWidth * ctx.drawInterval}}ms</td>\n    <td><input type="range" min="0.1" max="2.0" step="0.1" ng-model="ctx.transPulseWidth"></input></td>\n  </tr>\n  <tr>\n    <th>Signature</th>\n    <td>width</td>\n    <td>{{ctx.imgSize[0]}}px</td>\n    <td><input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[0]"></input></td>\n    <td>height</td>\n    <td>{{ctx.imgSize[1]}}px</td>\n    <td><input type="range" min="20" max="200" step="1" ng-model="ctx.imgSize[1]"></input></td>\n  </tr>\n  <tr>\n    <th>Limit</th>\n    <td>maximum</td>\n    <td>{{ctx.imgLimit}}</td>\n    <td><input type="range" min="100" max="1000" step="100" ng-model="ctx.imgLimit"></input></td>\n    <td>erase ratio</td>\n    <td>{{ctx.eraseRatio * 100}}%</td>\n    <td><input type="range" min="0.01" max="0.05" step="0.01" ng-model="ctx.eraseRatio"></input></td>\n  </tr>\n  <tr>\n    <th>Background</th>\n    <td><input type="color" ng-model="ctx.bgColor"></input></td>\n    <td colspan="5"><input type="file" ng-file-select="ctx.selectBg($files)"></input></td>\n  </tr>\n  <tr>\n    <th>Print</th>\n    <td>size</td>\n    <td>{{ctx.dispSize[0] * ctx.printScale}} * {{ctx.dispSize[1] * ctx.printScale}}</td>\n    <td><input type="range" min="1" max="4" step="0.5" ng-model="ctx.printScale"></input></td>\n    <td colspan="3">\n  </tr>\n  <tr>\n    <th>Preview</th>\n    <td colspan="3">\n      <img class="inline img-thumbnail"ng-src="{{ctx.bgImg}}" ng-style="{background: ctx.bgColor}"></img>\n    </td>\n    <td colspan="3">\n      <a ng-if="ctx.snapshot" target="_blank" ng-href="{{ctx.snapshot}}"><img class="inline img-thumbnail" ng-src="{{ctx.snapshot}}"></a>\n    </td>\n  </tr>\n  <tr>\n    <th>Control</th>\n    <td colspan="6"> \n      <input type="checkbox" ng-model="ctx.repeat"><label>repeat</label>\n      <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>\n      <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>\n      <button class="btn btn-warning" ng-click="ctx.pause()" ng-if="ctx.stat.stat === \'playing\'">pause</button>\n      <button class="btn btn-warning" ng-click="ctx.resume()" ng-if="ctx.stat.stat === \'paused\'">resume</button>\n      <button class="btn btn-info" ng-click="ctx.print()" ng-if="ctx.stat.stat">print</button>\n    </td>\n  </tr>\n</table>\n<table class="table">\n  <tr>\n    <th>Display</th>\n    <td>placed: </td>\n    <td>{{ctx.stat.imgPlaced || 0}}</td>\n    <td>failed: </td>\n    <td ng-class="{warning: ctx.stat.imgFailed}">{{ctx.stat.imgFailed || 0}}</td>\n  </tr>\n  <tr>\n    <th>API</th>\n    <td>guests: </td>\n    <td>{{ctx.stat.imgTotal || 0}}</td>\n    <td>error: </td>\n    <td ng-class="{warning: ctx.stat.apiError}">{{ctx.stat.apiError || 0}}</td>\n  </tr>\n</table>\n\n';
 });
 require.alias("mbostock-d3/d3.js", "d3-cloud-for-angular/deps/d3/d3.js");
 require.alias("mbostock-d3/index-browserify.js", "d3-cloud-for-angular/deps/d3/index-browserify.js");
