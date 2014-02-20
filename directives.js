@@ -3,18 +3,21 @@ var format = require('format').format;
 var d3Cloud = require('d3-cloud').cloud;
 var _ = require('underscore');
 var imgPath = 'rogerz-d3-cloud-for-angular';
+var ImgPool = require('./img-pool.js');
 
 require('./module')
 .directive('d3Cloud', function () {
-  function controller($scope, $timeout, controlPanel, signatureApi) {
+  function controller($scope, $timeout, $window, controlPanel, signatureApi) {
     var opts = $scope.opts = {
       dispSize: [1080, 640],
       imgSize: [64, 32],
       printScale: 2,
+      bgColor: 'grey',
       bgImg: imgPath + '/images/bg.png',
       imgLimit: 400,
-      blankArea: 0.01,// keep at least 10% blank area
+      eraseRatio: 0.01,// erase x * 100% signatures when place failed
       drawInterval: 2000,
+      repeat: false, // repeat existing signatures
       transPulseWidth: 1,// transition duration / draw interval
       transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
@@ -28,66 +31,22 @@ require('./module')
     function failed(tags) {
       stat.imgFailed++;
       $scope.$apply(function () {
-        opts.imgLimit = Math.floor(tags.length * (1 - opts.blankArea));
+        opts.imgLimit = Math.floor(tags.length * (1 - opts.eraseRatio));
       });
     }
 
     // TODO: define angular constant
-    var cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
-                   .spiral('rectangular')
-                   .startPos('point')
-                   .timeInterval(10)
-                   .on('placed', update)
-                   .on('failed', failed)
-                   .on('erased', function (tags) {stat.imgPlaced = tags.length;});
-
-
-    function ImgPool() {
-      this.images = [];
-    }
-
-    ImgPool.prototype.random = function () {
-      return this.images[Math.floor(Math.random() * this.images.length)];
-    };
-
-    ImgPool.prototype.push = function (image) {
-      var self = this;
-      var img = new Image();
-
-
-      img.onload = function () {
-        self.images.push({
-          img: img
-        });
-      };
-
-      if(/^https?:\/\//.test(image)) {
-        img.crossOrigin = 'Anonymous';
-      }
-      img.src = image;
-      img.width = opts.imgSize[0];
-      img.height = opts.imgSize[1];
-    };
-
-    ImgPool.prototype.merge = function (images) {
-      var self = this;
-      images.forEach (function (image) {
-        self.push(image.href);
-      });
-    };
-
-    ImgPool.prototype.reset = function () {
-      this.images = [];
-      signatureApi.reset();
-    };
-
-    ImgPool.prototype.getLength = function () {
-      return this.images.length;
-    };
-
+    var cloud;
     var timer;
     var imgPool = new ImgPool();
     var stat = opts.stat = {};
+
+    $scope.$watch('opts.repeat', function () {
+      imgPool.option(_.pick(opts, 'repeat'));
+    });
+    $scope.$watchCollection('opts.imgSize', function () {
+      imgPool.option(_.pick(opts, 'imgSize'));
+    });
 
     var pause = opts.pause = function pause() {
       stat.stat = "paused";
@@ -105,31 +64,48 @@ require('./module')
     var reset = opts.reset = function reset() {
       pause();
       imgPool.reset();
+      signatureApi.reset();
       stat = opts.stat = {
         imgFailed: 0,
         imgPlaced: 0,
-        imgInPool: 0
+        imgTotal: 0,
+        apiError: 0
       };
     };
 
     function step() {
       if (stat.imgPlaced > opts.imgLimit) {
         cloud.removeImg(stat.imgPlaced - opts.imgLimit);
-      } else if (imgPool.getLength()) {
-        cloud.addImg(imgPool.random());
+      } else {
+        cloud.addImg(imgPool.next());
       }
       timer = $timeout(step, opts.drawInterval);
     }
 
     // start cloud layout
     function start() {
+      // auto fit to window size
+      opts.dispSize = [
+        $window.innerWidth,
+        $window.innerHeight
+      ];
+      $scope.init();
+      cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
+                   .spiral('rectangular')
+                   .startPos('point')
+                   .timeInterval(10)
+                   .on('placed', update)
+                   .on('failed', failed)
+                   .on('erased', function (tags) {stat.imgPlaced = tags.length;});
+
       stat.stat = "playing";
       // TODO: fix the ugly callback for image async loading
       var bg = new Image();
       bg.src = opts.bgImg;
       bg.onload = function () {
         cloud.setBgImg({
-          img: bg
+          img: bg,
+          color: opts.bgColor
         });
         cloud.start();
         step();
@@ -139,20 +115,40 @@ require('./module')
     // run simulation
     opts.simulate = function simulate() {
       reset();
-      imgPool.push(imgPath + '/images/1.png');
-      imgPool.push(imgPath + '/images/2.png');
+      var images = _.range(1,3).map(function (d) {
+        return format('%s/images/%d.png', imgPath, d);
+      });
+      imgPool.add(images);
       start();
     };
 
     // connect to remote server
     opts.connect = function connect() {
       reset();
-      signatureApi.on('data', function (data) {
-        imgPool.merge(data);
-        stat.imgInPool = imgPool.getLength();
+      signatureApi
+      .on('data', function (data) {
+        var images = _.map(data, function (d) {
+          return d.href;
+        });
+        imgPool.add(images);
+        stat.imgTotal = imgPool.total();
+      })
+      .on('error', function () {
+        stat.apiError ++;
       });
       signatureApi.poll();
       start();
+    };
+
+    opts.selectBg = function (files) {
+      var file = files[0];
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        $scope.$apply(function () {
+          opts.bgImg = e.target.result;
+        });
+      };
+      reader.readAsDataURL(file);
     };
 
     opts.print = function () {
@@ -169,23 +165,27 @@ require('./module')
     link: function (scope, elem) {
       var sky = d3.select(elem[0]);// cloud must be in the sky :)
       var opts = scope.opts;
+      var size = {};
 
-      scope.$watchCollection('opts.dispSize', function (value) {
-        var svg = sky.selectAll('svg').data([value]);
-
-        svg.enter().append('svg').attr({
+      scope.init = function () {
+        size = {
+          width: opts.dispSize[0],
+          height: opts.dispSize[1]
+        };
+        var svg = sky.selectAll('svg').data([size]);
+       svg.enter().append('svg').attr({
                     'xmlns': 'http://www.w3.org/2000/svg',
                     'xmlns:xmlns:xlink': 'http://www.w3.org/1999/xlink', // hack: doubling xmlns: so it doesn't disappear once in the DOM
-                    version: '1.1'
+                    'version': '1.1'
                 });
 
-        svg.attr('width', function (d) { return d[0];})
-        .attr('height', function (d) { return d[1];})
-        .style('background', 'black');// TODO: configurable
+        svg.attr('width', function (d) { return d.width;})
+        .attr('height', function (d) { return d.height;})
+        .style('background', opts.bgColor);
 
         svg.exit().remove();
 
-        var offset = [value[0] / 2, value[1] / 2];
+        var offset = [size.width / 2, size.height / 2];
         var g = svg.selectAll('g').data([offset])
                 .attr('transform', function (d) { return format('translate(%s)', d);});
 
@@ -193,7 +193,7 @@ require('./module')
         .attr('transform', function (d) { return format('translate(%s)', d);});
 
         g.exit().remove();
-      });
+      };
 
       scope.draw = function (tags, bounds, d) {
         var g = sky.select('svg').select('g');
@@ -207,7 +207,7 @@ require('./module')
           .attr('y', function (d) { return -d.img.height / 2;})
           .attr('width', function (d) { return d.img.width;})
           .attr('height', function (d) { return d.img.height;})
-          .attr('transform', format('scale(%f)', opts.dispSize[0] / d.img.width))
+          .attr('transform', format('scale(%f)', size.width / d.img.width))
         .transition().duration(opts.transDuration())
           .attr('transform', function(d) {
             return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
@@ -220,8 +220,8 @@ require('./module')
         var print = sky.selectAll('canvas').data(sky.selectAll('svg')[0]);
 
         print.enter().append('canvas').style('display', 'none');
-        var width = opts.dispSize[0] * opts.printScale,
-            height = opts.dispSize[1] * opts.printScale;
+        var width = size.width * opts.printScale,
+            height = size.height * opts.printScale;
         print
         .attr('width', width)
         .attr('height', height)

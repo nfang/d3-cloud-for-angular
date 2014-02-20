@@ -1,6 +1,7 @@
 {
   "name": "d3-cloud-for-angular",
   "dependencies": {
-    "blueimp-canvas-to-blob": "~2.1.0"
+    "blueimp-canvas-to-blob": "~2.1.0",
+    "ng-file-upload": "~1.1.11"
   }
 }

@@ -2,15 +2,15 @@
   "name": "d3-cloud-for-angular",
   "repo": "rogerz/d3-cloud-for-angular",
   "description": "d3-cloud wrapped in AngularJS",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "keywords": [],
   "dependencies": {
-    "mbostock/d3": "*",
-    "rogerz/d3-cloud": "*",
-    "samsonjs/format": "*",
-    "jashkenas/underscore": "*",
-    "rogerz/control-panel-for-angular": "*",
-    "rogerz/signature-api-legacy-for-angular": "*"
+    "mbostock/d3": "v3.3.13",
+    "rogerz/d3-cloud": "0.0.2",
+    "samsonjs/format": "v0.2.1",
+    "jashkenas/underscore": "6c102a76dbebe7b4da0c245a734483af6df644c9",
+    "rogerz/control-panel-for-angular": "0.0.2",
+    "rogerz/signature-api-legacy-for-angular": "0.1.0"
   },
   "development": {},
   "paths": [
@@ -22,7 +22,8 @@
   "scripts": [
     "index.js",
     "module.js",
-    "directives.js"
+    "directives.js",
+    "img-pool.js"
   ],
   "styles": [],
   "templates": [

@@ -2,7 +2,7 @@ language: node_js
 node_js:
   - '0.10'
 before_script:
-  - npm install -g grunt-cli component
+  - npm install -g grunt-cli component bower
   - component install
 script:
-  - make build
+  - make example

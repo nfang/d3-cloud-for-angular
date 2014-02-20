@@ -3,5 +3,5 @@ module.exports = angular.module('rogerz/d3Cloud', [
 ]).config(function ($compileProvider) {
   // the snapshot is created as blob
   $compileProvider.aHrefSanitizationWhitelist(/^blob:/);
-  $compileProvider.imgSrcSanitizationWhitelist(/^blob:/);
+  $compileProvider.imgSrcSanitizationWhitelist(/^(blob|http|data):/);
 });
