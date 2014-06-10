@@ -1,3 +1,4 @@
+'use strict';
 var _ = require('underscore');
 
 function ImgPool (opts) {
@@ -7,7 +8,7 @@ function ImgPool (opts) {
     repeat: false,
     imgSize: [64, 32]
   };
-};
+}
 
 ImgPool.prototype.option = function (opts) {
   this.opts = _.extend(this.opts, opts);

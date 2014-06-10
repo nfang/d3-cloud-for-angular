@@ -88,11 +88,12 @@ require('./module')
 
       // start cloud layout
       function start() {
-        // auto fit to window size
+        /* don't do auto fit as it can be done by A/V mapping
         opts.dispSize = [
           $window.innerWidth,
           $window.innerHeight
         ];
+        */
         $scope.init();
         cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
           .spiral('rectangular')
