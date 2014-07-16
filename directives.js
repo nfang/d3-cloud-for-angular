@@ -199,14 +199,24 @@ require('./module')
             .style('background', opts.bgColor);
 
           svg.exit().remove();
+          svg.selectAll('g#background').data([opts.bgImg])
+            .enter().append('g')
+            .attr('id', 'background')
+            .append('svg:image')
+              .attr('x', 0)
+              .attr('y', 0)
+              .attr('width', opts.dispSize[0])
+              .attr('height', opts.dispSize[1])
+              .attr('xlink:href', opts.bgImg);
 
           var offset = [size.width / 2, size.height / 2];
-          var g = svg.selectAll('g').data([offset])
+          var g = svg.selectAll('g#container').data([offset])
             .attr('transform', function(d) {
               return format('translate(%s)', d);
             });
 
           g.enter().append('g')
+            .attr('id', 'container')
             .attr('transform', function(d) {
               return format('translate(%s)', d);
             });
@@ -215,7 +225,7 @@ require('./module')
         };
 
         scope.draw = function(tags, bounds, d) {
-          var g = sky.select('svg').select('g');
+          var g = sky.select('svg').select('g#container');
           var images = g.selectAll('image')
             .data(tags, function(d) {
               return d.id;
