@@ -6,7 +6,7 @@
   "keywords": [],
   "dependencies": {
     "mbostock/d3": "*",
-    "rogerz/d3-cloud": "no-auto-fit",
+    "rogerz/d3-cloud": "0.0.3",
     "samsonjs/format": "v0.2.1",
     "jashkenas/underscore": "6c102a76dbebe7b4da0c245a734483af6df644c9",
     "rogerz/control-panel-for-angular": "0.0.2",
