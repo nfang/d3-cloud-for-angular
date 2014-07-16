@@ -94,26 +94,30 @@ require('./module')
           $window.innerHeight
         ];
         */
-        $scope.init();
-        cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
-          .spiral('rectangular')
-          .startPos('point')
-          .timeInterval(10)
-          .on('placed', update)
-          .on('failed', failed)
-          .on('erased', function(tags) {
-            stat.imgPlaced = tags.length;
-          });
-
-        stat.stat = 'playing';
         // TODO: fix the ugly callback for image async loading
         var bg = new Image();
         bg.src = opts.bgImg;
         bg.onload = function() {
+          opts.dispSize = [
+            bg.width,
+            bg.height
+          ];
+          // require dispSize to init
+          $scope.init();
+          cloud = $scope.cloud = d3Cloud().size(opts.dispSize)
+            .spiral('rectangular')
+            .startPos('point')
+            .timeInterval(10)
+            .on('placed', update)
+            .on('failed', failed)
+            .on('erased', function(tags) {
+              stat.imgPlaced = tags.length;
+            });
           cloud.setBgImg({
             img: bg,
             color: opts.bgColor
           });
+          stat.stat = 'playing';
           cloud.start();
           step();
         };
