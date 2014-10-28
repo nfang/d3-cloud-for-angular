@@ -2,7 +2,7 @@ var d3 = require('d3');
 var format = require('format').format;
 var d3Cloud = require('d3-cloud').cloud;
 var _ = require('underscore');
-var imgPath = 'rogerz-d3-cloud-for-angular';
+var imgPath = 'nfang-d3-cloud-for-angular';
 var ImgPool = require('./img-pool.js');
 
 require('./module')
