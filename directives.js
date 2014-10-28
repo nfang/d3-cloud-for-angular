@@ -19,6 +19,13 @@ require('./module')
       drawInterval: 2000,
       repeat: false, // repeat existing signatures
       transPulseWidth: 1,// transition duration / draw interval
+
+      /**
+       * The duration for which a signature should stay on the screen before
+       * transform animation starts.
+       * @type {Number}
+       */
+      pauseDuration: 500,
       transDuration: function () {return opts.drawInterval * opts.transPulseWidth;}
     };
 
@@ -208,7 +215,9 @@ require('./module')
           .attr('width', function (d) { return d.img.width;})
           .attr('height', function (d) { return d.img.height;})
           .attr('transform', format('scale(%f)', size.width / d.img.width))
-        .transition().duration(opts.transDuration())
+        .transition()
+          .delay(opts.pauseDuration)
+          .duration(opts.transDuration())
           .attr('transform', function(d) {
             return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
           });

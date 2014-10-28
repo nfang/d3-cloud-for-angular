@@ -15,6 +15,14 @@
     <td><input type="range" min="0.1" max="2.0" step="0.1" ng-model="ctx.transPulseWidth"></input></td>
   </tr>
   <tr>
+    <th></th>
+    <td>pause</td>
+    <td>{{ctx.pauseDuration}}ms</td>
+    <td colspan="4">
+      <input type="range" min="0" max="5000" step="100" ng-model="ctx.pauseDuration"></input>
+    </td>
+  </tr>
+  <tr>
     <th>Signature</th>
     <td>width</td>
     <td>{{ctx.imgSize[0]}}px</td>
@@ -55,7 +63,7 @@
   </tr>
   <tr>
     <th>Control</th>
-    <td colspan="6"> 
+    <td colspan="6">
       <input type="checkbox" ng-model="ctx.repeat"><label>repeat</label>
       <button class="btn btn-primary" ng-click="ctx.connect()">connect</button>
       <button class="btn btn-normal" ng-click="ctx.simulate()">simulate</button>
@@ -81,4 +89,3 @@
     <td ng-class="{warning: ctx.stat.apiError}">{{ctx.stat.apiError || 0}}</td>
   </tr>
 </table>
-
